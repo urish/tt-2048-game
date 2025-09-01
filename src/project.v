@@ -211,6 +211,8 @@ module tt_um_2048_vga_game (
       grid <= 0;
       retro_colors <= 0;
       btn_select_prev <= 0;
+      new_tiles <= 0;
+      new_tiles_counter <= 0;
     end else begin
       R <= video_active ? rrggbb[5:4] : 2'b00;
       G <= video_active ? rrggbb[3:2] : 2'b00;

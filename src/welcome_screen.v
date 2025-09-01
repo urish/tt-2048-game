@@ -21,6 +21,7 @@ module welcome_screen (
   always @(posedge clk) begin
     if (~rst_n) begin
       welcome_counter <= `ANIMATION_DELAY;
+      grid <= 0;
     end else begin
       if (welcome_counter == `ANIMATION_DELAY) begin
         if (grid[lfsr_out*4+:4] == 4'd0) begin
