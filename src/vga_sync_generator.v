@@ -46,22 +46,27 @@ module vga_sync_generator (
   parameter V_SYNC_END = V_DISPLAY + V_BOTTOM + V_SYNC - 1;
   parameter V_MAX = V_DISPLAY + V_TOP + V_BOTTOM + V_SYNC - 1;
 
-  wire hmaxxed = (hpos == H_MAX) || reset;  // set when hpos is maximum
-  wire vmaxxed = (vpos == V_MAX) || reset;  // set when vpos is maximum
+  wire hmaxxed = (hpos == H_MAX);  // set when hpos is maximum
+  wire vmaxxed = (vpos == V_MAX);  // set when vpos is maximum
 
   // horizontal position counter
   always @(posedge clk) begin
     hsync <= (hpos >= H_SYNC_START && hpos <= H_SYNC_END) ? ~H_SYNC_INV : H_SYNC_INV;
-    if (hmaxxed) hpos <= 0;
-    else hpos <= hpos + 1;
+    if (reset) begin
+      hpos <= 0;
+    end else begin
+      hpos <= hmaxxed ? 0 : hpos + 1;
+    end
   end
 
   // vertical position counter
   always @(posedge clk) begin
     vsync <= (vpos >= V_SYNC_START && vpos <= V_SYNC_END) ? ~V_SYNC_INV : V_SYNC_INV;
-    if (hmaxxed)
-      if (vmaxxed) vpos <= 0;
-      else vpos <= vpos + 1;
+    if (reset) begin
+      vpos <= 0;
+    end else if (hmaxxed) begin
+      vpos <= vmaxxed ? 0 : vpos + 1;
+    end
   end
 
   // display_on is set when beam is in "safe" visible frame
