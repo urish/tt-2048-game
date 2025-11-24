@@ -35,7 +35,7 @@ MAP_VALUE_INV = {v: k for k, v in MAP_VALUE.items()}
 
 class GameDriver:
     def __init__(self, dut):
-        clock = Clock(dut.clk, 10, units="us")
+        clock = Clock(dut.clk, 10, unit="us")
         cocotb.start_soon(clock.start())
         self._dut = dut
         self._clock = clock
@@ -48,7 +48,7 @@ class GameDriver:
         self._dut.rst_n.value = 0
         await ClockCycles(self._dut.clk, 10)
         self._dut.rst_n.value = 1
-        self._dut.ui_in.value |= 0x80  # Enable debug mode
+        self._dut.ui_in.value = int(self._dut.ui_in.value) | 0x80  # Enable debug mode
         await self.move_up()  # Press the up key to start the game
 
     async def debug_cmd(self, cmd: int, data: int):
@@ -56,7 +56,7 @@ class GameDriver:
         await ClockCycles(self._dut.clk, 1)  # Wait for the next clock cycle
         self._dut.uio_in.value = 0
         await FallingEdge(self._dut.clk)  # Wait for output data to become valid
-        return (self._dut.uio_out.value >> 4) & 0xF
+        return (int(self._dut.uio_out.value) >> 4) & 0xF
 
     async def set(
         self, col0: List[int], col1: List[int], col2: List[int], col3: List[int]

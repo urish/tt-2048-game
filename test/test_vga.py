@@ -46,7 +46,7 @@ async def test_project(dut):
         )
 
     # Set up the clock
-    clock = Clock(dut.clk, CLOCK_PERIOD, units="ns")
+    clock = Clock(dut.clk, CLOCK_PERIOD, unit="ns")
     cocotb.start_soon(clock.start())
 
     # Reset the design
@@ -62,8 +62,8 @@ async def test_project(dut):
 
     async def check_line(expected_vsync):
         for i in range(H_TOTAL):
-            hsync = dut.uo_out[7].value.integer
-            vsync = dut.uo_out[3].value.integer
+            hsync = int(dut.uo_out.value[7])
+            vsync = int(dut.uo_out.value[3])
             assert hsync == (
                 0 if H_SYNC_START <= i < H_SYNC_END else 1
             ), "Unexpected hsync pattern"
@@ -72,16 +72,17 @@ async def test_project(dut):
 
     async def capture_line(framebuffer, offset):
         for i in range(H_TOTAL):
-            hsync = dut.uo_out[7].value.integer
-            vsync = dut.uo_out[3].value.integer
+            hsync = int(dut.uo_out.value[7])
+            vsync = int(dut.uo_out.value[3])
             assert hsync == (
                 0 if H_SYNC_START <= i < H_SYNC_END else 1
             ), "Unexpected hsync pattern"
             assert vsync == 1, "Unexpected vsync pattern"
             if i < H_DISPLAY:
                 framebuffer[offset + 3 * i : offset + 3 * i + 3] = palette[
-                    dut.uo_out.value.integer & 0b01110111
+                    int(dut.uo_out.value) & 0b01110111
                 ]
+
             await ClockCycles(dut.clk, 1)
 
     async def skip_frame(frame_num):
