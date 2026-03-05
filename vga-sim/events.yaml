@@ -1,0 +1,17 @@
+# Input events for 2048 VGA game demo
+#
+# Format: frame: ui_in value
+# ui_in bits: [0]=up [1]=down [2]=left [3]=right
+#
+# 5-move sequence: UP, LEFT, DOWN, RIGHT, UP
+
+2: 1       # btn_up press
+4: 0       # release
+25: 4      # btn_left press
+27: 0      # release
+48: 2      # btn_down press
+50: 0      # release
+71: 8      # btn_right press
+73: 0      # release
+94: 1      # btn_up press
+96: 0      # release

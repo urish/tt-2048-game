@@ -1,0 +1,33 @@
+name: vga-video
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y verilator ffmpeg
+          pip install -r vga-sim/requirements.txt
+
+      - name: Render VGA video
+        run: |
+          python3 vga-sim/vga_sim.py . -n 120 \
+            -d vga_frames -o frame \
+            --video vga_output.mp4 \
+            -i vga-sim/events.yaml
+
+      - name: Upload video artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vga-video
+          path: |
+            vga_frames/vga_output.mp4
+            vga_frames/frame_*.png
