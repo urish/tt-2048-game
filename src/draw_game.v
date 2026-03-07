@@ -6,6 +6,7 @@
 `default_nettype none
 
 module draw_game (
+    input wire clk,
     input wire [63:0] grid,
     input wire [15:0] new_tiles,
     input wire [2:0] new_tiles_counter,
@@ -28,9 +29,7 @@ module draw_game (
   localparam BOARD_X_RIGHT = BOARD_X_POS + BOARD_WIDTH;
   localparam BOARD_Y_BOTTOM = BOARD_Y_POS + BOARD_HEIGHT;
 
-  wire [5:0] color_font = retro_colors ? 6'b101110 : 6'b001111;
-  wire [5:0] color_bg = retro_colors ? {3'b000, x[0], 2'b00} : 6'd0;
-  wire [5:0] color_outline = retro_colors ? 6'b001000 : 6'b111111;
+  // ========== STAGE 1: Cell identification (combinational) ==========
 
   wire [9:0] board_x = x - BOARD_X_POS;
   wire [9:0] board_y = y - BOARD_Y_POS;
@@ -140,23 +139,54 @@ module draw_game (
   wire [5:0] glyph_x = anim_active ? (horizontal ? sel_sub_par : perp_sub) : board_x[5:0];
   wire [5:0] glyph_y = anim_active ? (horizontal ? perp_sub : sel_sub_par) : board_y[5:0];
 
+  wire board_area = x >= BOARD_X_POS && y >= BOARD_Y_POS && x < BOARD_X_RIGHT && y < BOARD_Y_BOTTOM;
+  wire debug_rect = x >= BOARD_X_POS - 64 && x < BOARD_X_RIGHT + 64 && y >= 16 && y < 32;
+
+  // ========== PIPELINE REGISTER ==========
+
+  reg [3:0] number_r;
+  reg [5:0] glyph_x_r, glyph_y_r;
+  reg board_area_r, is_outline_r, is_new_tile_r, debug_rect_r;
+  reg [5:0] x_hi_r;
+  reg retro_colors_r, x0_r;
+  reg [2:0] new_tiles_counter_r;
+  reg debug_mode_r;
+
+  always @(posedge clk) begin
+    number_r    <= current_number;
+    glyph_x_r  <= glyph_x;
+    glyph_y_r  <= glyph_y;
+    board_area_r <= board_area;
+    is_outline_r <= is_outline;
+    is_new_tile_r <= is_new_tile;
+    debug_rect_r <= debug_rect;
+    x_hi_r     <= x[8:3];
+    retro_colors_r <= retro_colors;
+    new_tiles_counter_r <= new_tiles_counter;
+    debug_mode_r <= debug_mode;
+    x0_r       <= x[0];
+  end
+
+  // ========== STAGE 2: Glyph ROM + color (from registered values) ==========
+
+  wire [5:0] color_font = retro_colors_r ? 6'b101110 : 6'b001111;
+  wire [5:0] color_bg = retro_colors_r ? {3'b000, x0_r, 2'b00} : 6'd0;
+  wire [5:0] color_outline = retro_colors_r ? 6'b001000 : 6'b111111;
+
   wire pixel;
   draw_numbers draw_numbers_inst (
-      .index(current_number),
-      .x(glyph_x),
-      .y(glyph_y),
+      .index(number_r),
+      .x(glyph_x_r),
+      .y(glyph_y_r),
       .pixel(pixel)
   );
 
-  wire board_area = x >= BOARD_X_POS && y >= BOARD_Y_POS && x < BOARD_X_RIGHT && y < BOARD_Y_BOTTOM;
-  wire [5:0] fade_font_color = 6'b001111 ^ {3'b0, new_tiles_counter};
-  wire [5:0] draw_text = is_new_tile ? fade_font_color : color_font;
-  wire [5:0] draw_board = is_outline ? color_outline : color_bg;
-
-  wire debug_rect = x >= BOARD_X_POS - 64 && x < BOARD_X_RIGHT + 64 && y >= 16 && y < 32;
+  wire [5:0] fade_font_color = 6'b001111 ^ {3'b0, new_tiles_counter_r};
+  wire [5:0] draw_text = is_new_tile_r ? fade_font_color : color_font;
+  wire [5:0] draw_board = is_outline_r ? color_outline : color_bg;
 
   always @(*) begin
-    rrggbb = board_area ? pixel ? draw_text : draw_board : debug_mode && debug_rect ? x[8:3] : 6'b0;
+    rrggbb = board_area_r ? pixel ? draw_text : draw_board : debug_mode_r && debug_rect_r ? x_hi_r : 6'b0;
   end
 
 endmodule

@@ -165,7 +165,9 @@ module tt_um_2048_vga_game (
 
   reg retro_colors;
   wire [5:0] rrggbb;
+  wire [9:0] pix_x_ahead = pix_x + 10'd1;
   draw_game draw_game_inst (
+      .clk(clk),
       .grid(grid),
       .new_tiles(new_tiles),
       .new_tiles_counter(new_tiles_counter[3:1]),
@@ -175,7 +177,7 @@ module tt_um_2048_vga_game (
       .anim_dir(anim_dir),
       .anim_offset(anim_offset),
       .disp_map(displacement_map),
-      .x(pix_x),
+      .x(pix_x_ahead),
       .y(pix_y),
       .rrggbb(rrggbb)
   );
