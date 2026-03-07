@@ -26,7 +26,14 @@ Use the `ui_in` pins to move the tiles on the board:
 | 2           | Left      |
 | 3           | Right     |
 
-Or use a SNES compatible controller along with the Gamepad Pmod. The game will automatically detect the presence of the Pmod and switch to controller input mode.
+Or use a SNES compatible controller along with the Gamepad Pmod. Both the d-pad and the face buttons can be used for movement:
+
+| D-pad  | Face button | Direction |
+|--------|-------------|-----------|
+| Up     | X           | Up        |
+| Down   | B           | Down      |
+| Left   | Y           | Left      |
+| Right  | A           | Right     |
 
 After resetting the game, you will see a jumping "2048" animation on the screen. Press any of the `ui_in[3:0]` pins (or the gamepad buttons) to start the game. The game will start with two tiles with the number 2 on the board. Use the `ui_in` pins (or the gamepad buttons) to move the tiles in the desired direction. The game will end when the board is full and no more moves can be made.
 

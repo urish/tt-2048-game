@@ -63,6 +63,10 @@ module tt_um_2048_vga_game (
   wire gamepad_down;
   wire gamepad_start;
   wire gamepad_select;
+  wire gamepad_a;
+  wire gamepad_b;
+  wire gamepad_x;
+  wire gamepad_y;
 
   /* verilator lint_off PINMISSING */
   gamepad_pmod_single gamepad_pmod (
@@ -80,15 +84,19 @@ module tt_um_2048_vga_game (
       .up(gamepad_up),
       .down(gamepad_down),
       .start(gamepad_start),
-      .select(gamepad_select)
+      .select(gamepad_select),
+      .a(gamepad_a),
+      .b(gamepad_b),
+      .x(gamepad_x),
+      .y(gamepad_y)
   );
   /* verilator lint_on PINMISSING */
 
-  // Combined inputs
-  wire btn_up = btn_up_in || gamepad_up;
-  wire btn_down = btn_down_in || gamepad_down;
-  wire btn_left = btn_left_in || gamepad_left;
-  wire btn_right = btn_right_in || gamepad_right;
+  // Combined inputs (d-pad + face buttons: X=up, B=down, Y=left, A=right)
+  wire btn_up = btn_up_in || gamepad_up || gamepad_x;
+  wire btn_down = btn_down_in || gamepad_down || gamepad_b;
+  wire btn_left = btn_left_in || gamepad_left || gamepad_y;
+  wire btn_right = btn_right_in || gamepad_right || gamepad_a;
   reg btn_select_prev;
   wire btn_select = gamepad_select;
 
@@ -108,7 +116,7 @@ module tt_um_2048_vga_game (
   wire [31:0] lfsr_out;
 
   // Suppress unused signals warning
-  wire _unused_ok = &{ena, ui_in[6:4], lfsr_out[27:16]};
+  wire _unused_ok = &{ena, ui_in[6:4], lfsr_out[27:16], gamepad_is_present};
 
   // Animation controller
   wire animating;
