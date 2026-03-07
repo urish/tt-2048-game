@@ -261,7 +261,7 @@ module tt_um_2048_vga_game (
       vsync_prev <= vsync;
 
       if (last_added_tile_index != 0) begin
-        new_tiles[last_added_tile_index] <= 1;
+        new_tiles <= (16'd1 << last_added_tile_index);
         new_tiles_counter <= 25;
       end
 
