@@ -110,6 +110,31 @@ module tt_um_2048_vga_game (
   // Suppress unused signals warning
   wire _unused_ok = &{ena, ui_in[6:4], lfsr_out[27:16]};
 
+  // Animation controller
+  wire animating;
+  wire [1:0] anim_dir;
+  wire [5:0] anim_offset;
+  wire anim_done;
+
+  anim_controller anim_controller_inst (
+      .clk(clk),
+      .rst_n(rst_n),
+      .vsync_rising_edge(vsync_rising_edge),
+      .btn_up(btn_up),
+      .btn_down(btn_down),
+      .btn_left(btn_left),
+      .btn_right(btn_right),
+      .enable(!show_welcome_screen),
+      .grid(grid),
+      .next_grid(next_grid),
+      .animating(animating),
+      .anim_dir(anim_dir),
+      .anim_offset(anim_offset),
+      .anim_done(anim_done)
+  );
+
+  wire [31:0] displacement_map;
+
   vga_sync_generator vga_sync_gen (
       .clk(clk),
       .reset(~rst_n),
@@ -146,6 +171,10 @@ module tt_um_2048_vga_game (
       .new_tiles_counter(new_tiles_counter[3:1]),
       .retro_colors(retro_colors_in || retro_colors),
       .debug_mode(debug_en),
+      .anim_active(animating),
+      .anim_dir(anim_dir),
+      .anim_offset(anim_offset),
+      .disp_map(displacement_map),
       .x(pix_x),
       .y(pix_y),
       .rrggbb(rrggbb)
@@ -174,11 +203,12 @@ module tt_um_2048_vga_game (
       .rst_n(rst_n),
       .grid(next_grid),
       .added_tile_index(last_added_tile_index),
+      .displacement_map(displacement_map),
       .lfsr_value(lfsr_out[15:0]),
-      .btn_up((~show_welcome_screen && btn_up) | debug_btn_up),
-      .btn_right((~show_welcome_screen && btn_right) | debug_btn_right),
-      .btn_down((~show_welcome_screen && btn_down) | debug_btn_down),
-      .btn_left((~show_welcome_screen && btn_left) | debug_btn_left),
+      .btn_up((~show_welcome_screen && ~animating && btn_up) | debug_btn_up),
+      .btn_right((~show_welcome_screen && ~animating && btn_right) | debug_btn_right),
+      .btn_down((~show_welcome_screen && ~animating && btn_down) | debug_btn_down),
+      .btn_left((~show_welcome_screen && ~animating && btn_left) | debug_btn_left),
       .btn_start(~show_welcome_screen && gamepad_start),
       .debug_move(|{debug_move}),
       .debug_grid_valid(debug_grid_valid),
@@ -231,14 +261,19 @@ module tt_um_2048_vga_game (
           if (btn_up || btn_down || btn_left || btn_right || gamepad_start) begin
             show_welcome_screen <= 0;
           end
-        end else begin
+        end else if (anim_done) begin
+          grid <= next_grid;
+          new_tiles_counter <= 25;
+        end else if (!animating) begin
           grid <= next_grid;
         end
 
-        if (new_tiles_counter != 0) begin
-          new_tiles_counter <= new_tiles_counter - 1;
-        end else begin
-          new_tiles <= 0;
+        if (!anim_done) begin
+          if (new_tiles_counter != 0) begin
+            new_tiles_counter <= new_tiles_counter - 1;
+          end else begin
+            new_tiles <= 0;
+          end
         end
       end
 

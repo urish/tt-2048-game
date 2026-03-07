@@ -8,7 +8,8 @@
 module game_row_push_merge (
     input  wire [15:0] row,         // 4x4 grid row input
     input  wire        push_right,  // 0 to push left, 1 to push right
-    output reg  [15:0] result_row   // Processed output row
+    output reg  [15:0] result_row,  // Processed output row
+    output reg  [7:0]  source_disp  // Per-cell displacement (4 cells x 2 bits)
 );
 
   reg [3:0] result_0, result_1, result_2, result_3;
@@ -16,6 +17,8 @@ module game_row_push_merge (
   reg merged_1;
   reg [3:0] value;
   integer i, j;
+  reg [1:0] disp_0, disp_1, disp_2, disp_3;
+  reg [1:0] disp_val, phys_col;
 
   always @(*) begin
     // Initialize result cells to 0
@@ -25,6 +28,10 @@ module game_row_push_merge (
     result_3 = 4'b0000;
     merged_0 = 1'b0;
     merged_1 = 1'b0;
+    disp_0 = 2'd0;
+    disp_1 = 2'd0;
+    disp_2 = 2'd0;
+    disp_3 = 2'd0;
 
     j = 0;  // Index to track the current position in the result
 
@@ -62,12 +69,23 @@ module game_row_push_merge (
             end
           end
         endcase
+        // Track per-cell displacement: how far this cell moved
+        disp_val = i[1:0] - j[1:0];
+        phys_col = push_right ? (2'd3 - i[1:0]) : i[1:0];
+        case (phys_col)
+          2'd0: disp_0 = disp_val;
+          2'd1: disp_1 = disp_val;
+          2'd2: disp_2 = disp_val;
+          2'd3: disp_3 = disp_val;
+        endcase
+
         j = j + 1;
       end
     end
 
     // Combine result cells into a single 16-bit value
     result_row = push_right ? {result_0, result_1, result_2, result_3} : {result_3, result_2, result_1, result_0};
+    source_disp = {disp_3, disp_2, disp_1, disp_0};
   end
 
 endmodule

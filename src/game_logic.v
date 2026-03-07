@@ -22,7 +22,8 @@ module game_logic (
     input wire [3:0] debug_grid_data,
 
     output reg [63:0] grid,
-    output reg [3:0] added_tile_index
+    output reg [3:0] added_tile_index,
+    output wire [31:0] displacement_map
 );
 
   function [63:0] transpose_grid(input [63:0] grid_in);
@@ -74,11 +75,15 @@ module game_logic (
   reg [1:0] current_row_index;
   wire [15:0] current_row = grid[current_row_index*16+:16];
   wire [15:0] current_row_pushed_merged;
+  wire [7:0] current_row_disp;
+  reg [31:0] disp_accum;
+  assign displacement_map = disp_accum;
 
   game_row_push_merge push_merge (
       .row(current_row),
       .push_right(current_direction == DIRECTION_RIGHT || current_direction == DIRECTION_DOWN),
-      .result_row(current_row_pushed_merged)
+      .result_row(current_row_pushed_merged),
+      .source_disp(current_row_disp)
   );
 
   always @(posedge clk) begin
@@ -95,6 +100,7 @@ module game_logic (
       valid_move <= 0;
       debug_move_reg <= 0;
       added_tile_index <= 0;
+      disp_accum <= 0;
     end else begin
       lfsr_shift <= lfsr_shift - 2'd1;
       added_tile_index <= 0;
@@ -121,6 +127,7 @@ module game_logic (
         valid_move <= 0;
         calculate_move <= 1;
         debug_move_reg <= debug_move;
+        disp_accum <= 0;
       end else if (should_transpose) begin
         grid <= transposed_grid;
         should_transpose <= 0;
@@ -129,6 +136,16 @@ module game_logic (
           valid_move <= 1;
         end
         grid[current_row_index*16+:16] <= current_row_pushed_merged;
+
+        // Accumulate per-cell displacement map
+        if (current_direction == DIRECTION_UP || current_direction == DIRECTION_DOWN) begin
+          disp_accum[{2'd0, current_row_index, 1'b0} +: 2] <= current_row_disp[1:0];
+          disp_accum[{2'd1, current_row_index, 1'b0} +: 2] <= current_row_disp[3:2];
+          disp_accum[{2'd2, current_row_index, 1'b0} +: 2] <= current_row_disp[5:4];
+          disp_accum[{2'd3, current_row_index, 1'b0} +: 2] <= current_row_disp[7:6];
+        end else begin
+          disp_accum[current_row_index*8 +: 8] <= current_row_disp;
+        end
 
         current_row_index <= current_row_index + 1;
         if (current_row_index == 2'd3) begin
